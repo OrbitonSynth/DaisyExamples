@@ -1,23 +1,25 @@
-#include "daisysp.h"
 #include "daisy_seed.h"
+#include "daisysp.h"
 
-using namespace daisysp;
 using namespace daisy;
+using namespace daisysp;
 
 static DaisySeed  hw;
+CpuLoadMeter loadMeter;
 static Biquad     flt;
 
-static void AudioCallback(AudioHandle::InterleavingInputBuffer  in,
-                          AudioHandle::InterleavingOutputBuffer out,
-                          size_t                                size) {
+void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out, size_t size) {
     float output;
-    for(size_t i = 0; i < size; i += 2) {
-        output = flt.Process(in[i]);
+
+    loadMeter.OnBlockStart();
+    for (size_t i = 0; i < size; i++) {
+        output = flt.Process(in[0][i]);
         // left out
-        out[i] = output;
+        out[0][i] = output;
         // right out
-        out[i + 1] = output;
+        out[1][i] = output;
     }
+    loadMeter.OnBlockEnd();
 }
 
 int main(void) {
@@ -25,6 +27,7 @@ int main(void) {
     float sample_rate;
     hw.Configure();
     hw.Init();
+    hw.StartLog();
     hw.SetAudioBlockSize(4);
     sample_rate = hw.AudioSampleRate();
 
@@ -32,9 +35,22 @@ int main(void) {
     flt.Init(sample_rate);
     flt.SetRes(0.9);
     flt.SetCutoff(4000);
+
     // start callback
+    loadMeter.Init(hw.AudioSampleRate(), hw.AudioBlockSize());
     hw.StartAudio(AudioCallback);
 
-
-    while(1) {}
+    while(1) {
+		// get the current load (smoothed value and peak values)
+        const float avgLoad = loadMeter.GetAvgCpuLoad();
+        const float maxLoad = loadMeter.GetMaxCpuLoad();
+        const float minLoad = loadMeter.GetMinCpuLoad();
+        // print it to the serial connection (as percentages)
+        hw.PrintLine("Processing Load %:");
+        hw.PrintLine("Max: " FLT_FMT3, FLT_VAR3(maxLoad * 100.0f));
+        hw.PrintLine("Avg: " FLT_FMT3, FLT_VAR3(avgLoad * 100.0f));
+        hw.PrintLine("Min: " FLT_FMT3, FLT_VAR3(minLoad * 100.0f));
+        // don't spam the serial connection too much
+        System::Delay(500);
+	}
 }
