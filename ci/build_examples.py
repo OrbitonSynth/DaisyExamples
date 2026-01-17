@@ -18,7 +18,7 @@ filter_dirs = ["libDaisy",
                "utils",
                "stmlib",
                "libdaisy",
-               "MyProjects"]
+               "orbiton"]
 
 dirs_to_search = list(
     filter(lambda x: x not in filter_dirs and os.path.isdir(x), os.listdir('.')))
