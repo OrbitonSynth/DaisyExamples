@@ -6,9 +6,9 @@ using namespace daisysp;
 
 static DaisySeed  hw;
 CpuLoadMeter loadMeter;
-static Biquad flts[159];
+static Biquad flts[16];
 
-int numFilters = 159;
+int numFilters = 16;
 
 float frac;
 float scalar;
@@ -20,7 +20,7 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out, s
     for (size_t i = 0; i < size; i++) {
         output = 0.0f;
         for (int j = 0; j < numFilters; j++) {
-            // output += flts[j].Process(in[0][i]);
+            output += flts[j].Process(in[0][i]);
         }
         output *= scalar;
         // left out
