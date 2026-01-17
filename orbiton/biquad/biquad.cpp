@@ -8,6 +8,8 @@ static DaisySeed  hw;
 CpuLoadMeter loadMeter;
 static Biquad     flt;
 
+float frac;
+
 void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out, size_t size) {
     float output;
 
@@ -31,10 +33,12 @@ int main(void) {
     hw.SetAudioBlockSize(4);
     sample_rate = hw.AudioSampleRate();
 
+    frac = 1.f / RAND_MAX;
+
     // initialize Biquad and set parameters
     flt.Init(sample_rate);
-    flt.SetRes(0.9);
-    flt.SetCutoff(4000);
+    flt.SetRes(rand() * frac * 0.9f); // 0 - 0.9
+    flt.SetCutoff(100 + rand() * frac * 4900.0f); // 100Hz - 5kHz
 
     // start callback
     loadMeter.Init(hw.AudioSampleRate(), hw.AudioBlockSize());
