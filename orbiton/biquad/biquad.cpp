@@ -6,16 +6,23 @@ using namespace daisysp;
 
 static DaisySeed  hw;
 CpuLoadMeter loadMeter;
-static Biquad     flt;
+static Biquad flts[159];
+
+int numFilters = 159;
 
 float frac;
+float scalar;
 
 void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out, size_t size) {
     float output;
 
     loadMeter.OnBlockStart();
     for (size_t i = 0; i < size; i++) {
-        output = flt.Process(in[0][i]);
+        output = 0.0f;
+        for (int j = 0; j < numFilters; j++) {
+            // output += flts[j].Process(in[0][i]);
+        }
+        output *= scalar;
         // left out
         out[0][i] = output;
         // right out
@@ -34,11 +41,15 @@ int main(void) {
     sample_rate = hw.AudioSampleRate();
 
     frac = 1.f / RAND_MAX;
+    scalar = 1.0f / numFilters;
 
     // initialize Biquad and set parameters
-    flt.Init(sample_rate);
-    flt.SetRes(rand() * frac * 0.9f); // 0 - 0.9
-    flt.SetCutoff(100 + rand() * frac * 4900.0f); // 100Hz - 5kHz
+    for (int i = 0; i < numFilters; i++) {
+        flts[i] = Biquad();
+        flts[i].Init(sample_rate);
+        flts[i].SetRes(rand() * frac * 0.9f); // 0 - 0.9
+        flts[i].SetCutoff(100 + rand() * frac * 4900.0f); // 100Hz - 5kHz
+    }
 
     // start callback
     loadMeter.Init(hw.AudioSampleRate(), hw.AudioBlockSize());
